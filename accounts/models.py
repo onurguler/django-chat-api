@@ -11,12 +11,13 @@ class User(AbstractUser):
         null=False,
         blank=False,
         help_text='Required. %(username_max_length)d characters or fewer. Letters, digits and _ only.' % {
-           'username_max_length': 32},
+            'username_max_length': 32},
         error_messages={
             'unique': "A user with that username already exists."
         },
     )
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
     USERNAME_FIELD = 'username'
 
     def __str__(self):
