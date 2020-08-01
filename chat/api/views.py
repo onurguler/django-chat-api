@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from chat.api.serializers import SendMessageSerializer, MessageSerializer
+from chat.api.serializers import SendMessageSerializer, MessageSerializer, ConversationSerializer
 from chat.models import Conversation, Message
 
 
@@ -13,7 +13,7 @@ class SendMessage(APIView):
     Send a message to a user
     """
     serializer_class = SendMessageSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request, username):
         serializer = self.serializer_class(data=request.data)
@@ -40,16 +40,20 @@ class SendMessage(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         # get private 1-1 conversation
-        conversation_qs = owner.conversations.filter(
-            participants__in=[to_user], max_members=2)
+        conversation_qs = owner.conversations.filter(max_members=2,
+                                                     participants__in=[owner, to_user])
 
         if not conversation_qs.exists():
+            print("conversation bulunamadı")
             conversation = Conversation.objects.create()
-            conversation.participants.add(owner)
-            conversation.participants.add(to_user)
+            conversation.participants.set([owner, to_user])
+            # conversation.participants.add(owner)
+            # conversation.participants.add(to_user)
         else:
             conversation = conversation_qs[0]
 
+        for participant in conversation.participants.all():
+            print(participant)
         message = Message.objects.create(
             owner=owner, to=conversation, text=text)
 
@@ -58,3 +62,14 @@ class SendMessage(APIView):
         return Response({
             'message': message_serializer.data
         }, status=status.HTTP_201_CREATED)
+
+
+class GetConversations(APIView):
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request):
+        user = request.user
+        conversations = user.conversations.all()
+        conversations_serializer = ConversationSerializer(
+            conversations, many=True)
+        return Response(conversations_serializer.data, status=status.HTTP_200_OK)

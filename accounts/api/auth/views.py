@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 
 from accounts.api.auth.serializers import RegisterSerializer, LoginSerializer
+from accounts.api.users.serializers import UserSerializer
 
 
 class Register(APIView):
@@ -60,3 +62,12 @@ class Login(APIView):
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         else:
             raise AuthenticationFailed()
+
+
+class LoadUser(APIView):
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request):
+        user = request.user
+        user_serializer = UserSerializer(user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
