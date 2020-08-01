@@ -35,7 +35,7 @@ class ConversationMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ('owner', 'text', 'created_at', 'updated_at')
+        fields = ('id', 'owner', 'text', 'created_at', 'updated_at')
         read_only_fields = fields
 
     def get_owner(self, obj):

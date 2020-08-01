@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from chat.api.serializers import SendMessageSerializer, MessageSerializer, ConversationSerializer
+from chat.api.serializers import (SendMessageSerializer, MessageSerializer,
+                                  ConversationSerializer, ConversationMessageSerializer)
 from chat.models import Conversation, Message
 
 
@@ -73,3 +74,36 @@ class GetConversations(APIView):
         conversations_serializer = ConversationSerializer(
             conversations, many=True)
         return Response(conversations_serializer.data, status=status.HTTP_200_OK)
+
+
+class GetUserChatMessages(APIView):
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, username):
+        User = get_user_model()
+
+        user = request.user
+        to_user = None
+
+        try:
+            to_user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({
+                'username': "%s not found." % username
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # get private 1-1 conversation
+        conversation_qs = user.conversations.filter(max_members=2,
+                                                    participants__in=[user, to_user])
+
+        if not conversation_qs.exists():
+            return Response({
+                'conversation': "Conversation not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        conversation = conversation_qs[0]
+        messages = conversation.messages.order_by('-created_at')
+        messages_serializer = ConversationMessageSerializer(
+            messages, many=True)
+
+        return Response(messages_serializer.data, status=status.HTTP_200_OK)
