@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'channels',
     'accounts',
     'chat',
 ]
@@ -72,6 +73,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'scobimessenger.wsgi.application'
+ASGI_APPLICATION = 'scobimessenger.routing.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 
 # Database
