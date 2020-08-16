@@ -3,6 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from asgiref.sync import async_to_sync
+import channels.layers
+import json
 
 from chat.api.serializers import (SendMessageSerializer, MessageSerializer,
                                   ConversationSerializer, ConversationMessageSerializer)
@@ -60,6 +63,17 @@ class SendMessage(APIView):
 
         message_serializer = MessageSerializer(message, read_only=True)
 
+        message_json = json.dumps(message_serializer.data)
+        conversation_group_name = 'chat_%s' % conversation.uuid
+        channel_layer = channels.layers.get_channel_layer()
+        # Send message to room group
+        async_to_sync(channel_layer.group_send)(
+            conversation_group_name,
+            {
+                'type': 'chat_message',
+                'message': message_json
+            }
+        )
         return Response({
             'message': message_serializer.data
         }, status=status.HTTP_201_CREATED)
